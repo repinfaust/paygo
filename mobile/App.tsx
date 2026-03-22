@@ -725,33 +725,32 @@ function RegionScreen({ regions, onSelect, onOpenConfig }: { regions: RegionConf
           const key = normalizeRegion(r);
           const isUK = key === "UK";
           const isUS = key === "US";
+          const isIE = key === "IE";
           const title = isUK ? "United Kingdom" : isUS ? "United States" : "Ireland";
           const body =
             isUK
-              ? "Full access to Faster Payments, Open Banking integrations, and GBP accounts."
+              ? "Ember · Smart meter enabled · Ofgem regulated"
               : isUS
-                ? "ACH, FedWire, and US Dollar custody services."
-                : "SEPA instant transfers and EEA compliant wallets.";
+                ? "Pulse · AMI smart meters · EV, solar & TOU pricing"
+                : "Solas · Non-smart meter market · CRU regulated";
           const currency = isUK ? "GBP (£)" : isUS ? "USD ($)" : "EUR (€)";
+          const selectLabel = isUK ? "Select UK" : isUS ? "Select US" : "Select Ireland";
+          const icon = isUK ? "🔥" : isUS ? "〰" : "☀";
           return (
-            <Pressable key={r.id} style={[styles.shellCard, isUK && styles.shellCardFeatured, key === "IE" && styles.shellCardIreland]} onPress={() => onSelect(r)}>
+            <Pressable key={r.id} style={styles.shellCard} onPress={() => onSelect(r)}>
               <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
                 <View style={{ flex: 1, paddingRight: 8 }}>
                   {isUK && <Text style={styles.shellTag}>PRIMARY REGION</Text>}
-                  <Text style={[styles.shellCardTitle, isUK && { fontSize: 50, lineHeight: 50 }]}>{isUK ? "United\nKingdom" : title}</Text>
+                  <Text style={styles.shellCardTitle}>{title}</Text>
                   <Text style={styles.shellCardBody}>{body}</Text>
                 </View>
-                <View style={[styles.shellIconWrap, isUK && styles.shellIconWrapFeatured]}>
-                  <Text style={[styles.shellIcon, isUK && { color: "#5d6d83" }]}>{isUK ? "◍" : isUS ? "◔" : "€"}</Text>
+                <View style={styles.shellIconWrap}>
+                  <Text style={styles.shellIcon}>{icon}</Text>
                 </View>
               </View>
               <View style={styles.shellCardRow}>
                 <Text style={styles.shellCurrency}>{currency}</Text>
-                {isUK ? (
-                  <View style={styles.shellSelectBtn}><Text style={styles.shellSelectTxt}>Select UK</Text></View>
-                ) : (
-                  <Text style={styles.shellSelectHint}>Select Market →</Text>
-                )}
+                <View style={styles.shellSelectBtn}><Text style={styles.shellSelectTxt}>{selectLabel} →</Text></View>
               </View>
             </Pressable>
           );
