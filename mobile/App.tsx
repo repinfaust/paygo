@@ -22,6 +22,7 @@ type Route = "splash" | "region" | "customer" | "dashboard" | "topup" | "payment
 type Brand = "shell" | "ember" | "solas" | "pulse";
 type ConfigScope = "segment" | "region";
 type QuickScenario = { id: string; label: string; region: "UK" | "IE" | "US"; brand: "Ember" | "Solas" | "Pulse" };
+const CONFIG_BUILD_MARKER = "scenario-stage-v2";
 
 const QUICK_SCENARIOS: QuickScenario[] = [
   { id: "vulnerable-customer", label: "Vulnerable customer", region: "UK", brand: "Ember" },
@@ -618,6 +619,9 @@ export default function App() {
           >
             <View style={{ marginTop: 8 }}>
               <Text style={{ color: TOKENS.ember.muted, fontFamily: "Inter_700Bold", fontSize: 11, letterSpacing: 1.2 }}>QUICK SCENARIOS</Text>
+              <Text style={{ marginTop: 4, color: "#a18b78", fontFamily: "Inter_500Medium", fontSize: 10 }}>
+                Build: {CONFIG_BUILD_MARKER}
+              </Text>
               <View style={{ marginTop: 10, flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
                 {QUICK_SCENARIOS.map((item) => (
                   <Pressable
