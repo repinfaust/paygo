@@ -1,0 +1,63 @@
+# PAYGO POC: Design System & Component Specification
+
+**Version:** 1.0  
+**Project:** Modular PAYG POC App (Shell + Regional Brands)
+
+---
+
+## 1. Visual Strategy: "The Multi-Market Modular Shell"
+
+This document outlines the visual architecture for the PAYGO POC. The app is designed as a neutral, utility-first shell that dynamically rethemes itself based on the selected regional market (UK, Ireland, USA).
+
+### Core Brand Identity (PAYGO Shell)
+- **Role:** Neutral infrastructure, navigation, and administrative shell.
+- **Palette:** Slate Greys, clean Whites, and subtle interface highlights.
+- **Typography:** Modern Sans-Serif (Inter/Standard).
+- **Core Screens:** `{{DATA:SCREEN:SCREEN_38}}` (Splash), `{{DATA:SCREEN:SCREEN_23}}` (Region Selector), `{{DATA:SCREEN:SCREEN_35}}` (Filtered Customer Selector).
+
+---
+
+## 2. Regional Design Systems
+
+### 🇬🇧 Ember (UK Market)
+- **Creative North Star:** "The Editorial Ember" — Warm, premium, and trust-focused.
+- **Primary Color:** #BA7517 (Amber/Copper)
+- **Typography:** Newsreader (Serif) for branding and headlines; Sans-Serif for utility.
+- **Key Characteristics:** Soft gradients, elevated card styling, and elegant editorial layouts.
+- **Latest Dashboard:** `{{DATA:SCREEN:SCREEN_33}}`
+
+### 🇮🇪 Solas (Ireland Market)
+- **Creative North Star:** "Organic Editorial" — Fresh, community-rooted, and sustainable.
+- **Primary Color:** #1D9E75 (Sage Green)
+- **Typography:** Plus Jakarta Sans (Modern Sans-Serif).
+- **Key Characteristics:** Botanical accents, clear whitespace, and a friendly, approachable tone.
+- **Latest Dashboard:** `{{DATA:SCREEN:SCREEN_36}}`
+
+### 🇺🇸 Pulse (USA Market)
+- **Creative North Star:** "Kinetic Precision" — Data-forward, high-performance, and technical.
+- **Primary Color:** #534AB7 (Pulse Indigo)
+- **Typography:** Space Grotesk (Tech Sans-Serif).
+- **Key Characteristics:** High contrast, sharp EKG-style visualizations, and dense data modules.
+- **Latest Dashboard:** `{{DATA:SCREEN:SCREEN_18}}`
+
+---
+
+## 3. Component Architecture
+
+### Shell Components (Neutral)
+- **TopAppBar:** Minimal branding ("PAYGO"), region-switching access.
+- **BottomNavBar:** Standard 4-tab utility (Dashboard, Usage, Payments, Account).
+- **Config Wrench:** Floating action button to trigger the `{{DATA:SCREEN:SCREEN_21}}` (Demo Config Panel).
+
+### Brand Components (Themed)
+Each brand uses a shared underlying logic but unique CSS styling:
+- **Balance Widgets:** Themed to brand primary colors.
+- **Action Buttons:** Rounded corners and shadows vary by brand (Ember = Sharp/Premium, Solas = Rounded/Soft, Pulse = Flat/Technical).
+- **Data Cards:** Distinct backgrounds and border-treatments per region.
+
+---
+
+## 4. Development Notes for Codex
+1. **Dynamic Retheming:** Ensure theme tokens (colors, fonts, radius) are swapped at the root level when a region is selected.
+2. **Feature Gating:** Refer to the `{{DATA:TEXT:TEXT_19}}` (Build Spec) for logic on how features (EV, Solar, TOU) should be toggled per customer profile.
+3. **Mock Data:** Use the provided JSON structures to populate the branded screens, ensuring currency symbols match the region.
