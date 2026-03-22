@@ -58,6 +58,19 @@ function mergeFlags(base, region, segment, customer) {
   };
 }
 
+function resolveAiAnalystFlag({ base, regionOverrides, segmentFlags, customerScenarioOverrides }) {
+  if (Object.prototype.hasOwnProperty.call(customerScenarioOverrides || {}, "aiAnalystCard")) {
+    return Boolean(customerScenarioOverrides.aiAnalystCard);
+  }
+  if (Object.prototype.hasOwnProperty.call(segmentFlags || {}, "aiAnalystCard")) {
+    return Boolean(segmentFlags.aiAnalystCard);
+  }
+  if (Object.prototype.hasOwnProperty.call(regionOverrides || {}, "aiAnalystCard")) {
+    return Boolean(regionOverrides.aiAnalystCard);
+  }
+  return Boolean(base?.aiAnalystCard);
+}
+
 exports.resolveConfig = onCall({ region: "europe-west2" }, async (request) => {
   requireAuth(request);
 
@@ -94,6 +107,14 @@ exports.resolveConfig = onCall({ region: "europe-west2" }, async (request) => {
     customer.featureOverrides || {},
     customer.scenarioOverrides || {},
   );
+
+  // AI Analyst scope is scenario > segment > region (not customer-level override).
+  featureFlags.aiAnalystCard = resolveAiAnalystFlag({
+    base: {},
+    regionOverrides: region.capabilityOverrides || {},
+    segmentFlags: segment?.featureFlags || {},
+    customerScenarioOverrides: customer.scenarioOverrides || {},
+  });
 
   if (region.smartMeterAvailability === false) {
     featureFlags.realTimeUsageBar = false;
