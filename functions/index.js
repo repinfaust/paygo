@@ -886,6 +886,36 @@ function buildInsightRequest() {
 Generate one useful observation about balance, usage pattern, or likely top-up need.`;
 }
 
+function buildFallbackInsight(context, reasonCode = "fallback") {
+  const currency = context?.currency || "";
+  const balance = Number(context?.customer?.account?.balance ?? 0);
+  const daysRemaining = Number(context?.customer?.account?.daysRemaining ?? 0);
+  const burnRate = Number(context?.derivedBurnRate ?? 0);
+  const hasBurnRate = Number.isFinite(burnRate) && burnRate > 0;
+  const estDays = daysRemaining > 0 ? daysRemaining : hasBurnRate ? Math.max(1, Math.floor(balance / burnRate)) : null;
+  const topUpHint = hasBurnRate ? Math.max(5, Math.ceil((burnRate * 7) / 5) * 5) : 20;
+  const meterType = String(context?.customer?.account?.meterType || "").toLowerCase();
+  const isEstimated = meterType.includes("non-smart") || String(context?.customer?.account?.daysRemainingBasis || "").toLowerCase().includes("estimate");
+
+  let insight = `Your current balance is ${currency}${balance.toFixed(2)}.`;
+  if (estDays) {
+    insight += ` At your recent usage, that is about ${estDays} day${estDays === 1 ? "" : "s"} remaining.`;
+  }
+  insight += ` A top-up of around ${currency}${topUpHint} should give you a safer buffer for the week.`;
+
+  return {
+    insight,
+    confidenceLevel: isEstimated ? "low" : "medium",
+    suggestedQuestions: [
+      "How long will my balance last?",
+      "What top-up amount is safest this week?",
+      "What changed since my last top-up?",
+    ],
+    caveat: isEstimated ? "Based on estimated usage data." : null,
+    fallbackReason: reasonCode,
+  };
+}
+
 async function callOpenAI({ apiKey, messages, maxTokens = 300, jsonOutput = false }) {
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
@@ -943,9 +973,6 @@ function normalizeInsightPayload(rawText) {
 exports.aiAnalyst = onCall({ region: "europe-west2", secrets: [OPENAI_API_KEY] }, async (request) => {
   requireAuth(request);
   const apiKey = OPENAI_API_KEY.value();
-  if (!apiKey) {
-    throw new HttpsError("failed-precondition", "OPENAI_API_KEY is not configured.");
-  }
 
   const { mode, context, history, question } = request.data || {};
   if (mode !== "insight" && mode !== "followup") {
@@ -959,28 +986,41 @@ exports.aiAnalyst = onCall({ region: "europe-west2", secrets: [OPENAI_API_KEY] }
   const systemPrompt = buildSystemPrompt(context);
 
   if (mode === "insight") {
-    const content = await callOpenAI({
-      apiKey,
-      jsonOutput: true,
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: buildInsightRequest() },
-      ],
-      maxTokens: 300,
-    });
+    try {
+      if (!apiKey) {
+        logger.warn("aiAnalyst insight fallback: missing OPENAI_API_KEY", { uid: request.auth.uid });
+        return { ok: true, ...buildFallbackInsight(context, "missing-api-key") };
+      }
+      const content = await callOpenAI({
+        apiKey,
+        jsonOutput: true,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: buildInsightRequest() },
+        ],
+        maxTokens: 300,
+      });
 
-    const payload = normalizeInsightPayload(content);
-    const regionCode = String(context?.region || "").toUpperCase();
-    const meterType = String(context?.customer?.account?.meterType || "").toLowerCase();
-    const daysRemainingBasis = String(context?.customer?.account?.daysRemainingBasis || "").toLowerCase();
-    const shouldShowEstimateCaveat =
-      regionCode === "IE" && (meterType === "non-smart" || daysRemainingBasis.includes("estimate"));
+      const payload = normalizeInsightPayload(content);
+      const regionCode = String(context?.region || "").toUpperCase();
+      const meterType = String(context?.customer?.account?.meterType || "").toLowerCase();
+      const daysRemainingBasis = String(context?.customer?.account?.daysRemainingBasis || "").toLowerCase();
+      const shouldShowEstimateCaveat =
+        regionCode === "IE" && (meterType === "non-smart" || daysRemainingBasis.includes("estimate"));
 
-    return {
-      ok: true,
-      ...payload,
-      caveat: shouldShowEstimateCaveat ? "Based on estimated usage data." : null,
-    };
+      return {
+        ok: true,
+        ...payload,
+        caveat: shouldShowEstimateCaveat ? "Based on estimated usage data." : null,
+      };
+    } catch (e) {
+      logger.error("aiAnalyst insight failed; serving fallback", {
+        uid: request.auth.uid,
+        code: e?.code || null,
+        message: e?.message || String(e),
+      });
+      return { ok: true, ...buildFallbackInsight(context, "openai-failure") };
+    }
   }
 
   const cleanedHistory = Array.isArray(history)
@@ -993,16 +1033,31 @@ exports.aiAnalyst = onCall({ region: "europe-west2", secrets: [OPENAI_API_KEY] }
     throw new HttpsError("invalid-argument", "question is required for followup.");
   }
 
-  const followupText = await callOpenAI({
-    apiKey,
-    jsonOutput: false,
-    messages: [
-      { role: "system", content: systemPrompt },
-      ...cleanedHistory,
-      { role: "user", content: cleanedQuestion },
-    ],
-    maxTokens: 220,
-  });
+  try {
+    if (!apiKey) {
+      logger.warn("aiAnalyst followup fallback: missing OPENAI_API_KEY", { uid: request.auth.uid });
+      const fallback = buildFallbackInsight(context, "missing-api-key-followup");
+      return { ok: true, answer: fallback.insight };
+    }
+    const followupText = await callOpenAI({
+      apiKey,
+      jsonOutput: false,
+      messages: [
+        { role: "system", content: systemPrompt },
+        ...cleanedHistory,
+        { role: "user", content: cleanedQuestion },
+      ],
+      maxTokens: 220,
+    });
 
-  return { ok: true, answer: followupText.trim() };
+    return { ok: true, answer: followupText.trim() };
+  } catch (e) {
+    logger.error("aiAnalyst followup failed; serving fallback", {
+      uid: request.auth.uid,
+      code: e?.code || null,
+      message: e?.message || String(e),
+    });
+    const fallback = buildFallbackInsight(context, "openai-failure-followup");
+    return { ok: true, answer: fallback.insight };
+  }
 });

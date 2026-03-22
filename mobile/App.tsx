@@ -1728,7 +1728,11 @@ function AiAnalystCard({
         if (cancelled) return;
         const data = response?.data || {};
         if (!data?.insight) {
-          setHidden(true);
+          setInsight("AI analyst is enabled, but no insight is available yet. Please try again in a moment.");
+          setConfidenceLevel("low");
+          setCaveat("Live insight service returned no content.");
+          setSuggestedQuestions(["How long will my balance last?", "Should I top up today?", "Show me a safer top-up amount."]);
+          setHistory([{ role: "assistant", content: "AI analyst is enabled, but no insight is available yet. Please try again in a moment." }]);
           return;
         }
         setInsight(String(data.insight));
@@ -1736,8 +1740,19 @@ function AiAnalystCard({
         setCaveat(data.caveat ? String(data.caveat) : null);
         setSuggestedQuestions(Array.isArray(data.suggestedQuestions) ? data.suggestedQuestions.slice(0, 3) : []);
         setHistory([{ role: "assistant", content: String(data.insight) }]);
-      } catch {
-        setHidden(true);
+      } catch (e: any) {
+        const raw = String(e?.message || "");
+        const msg =
+          raw.includes("resource-exhausted")
+            ? "Daily AI quota reached (50 calls). Try again tomorrow."
+            : raw.includes("not-found")
+              ? "AI analyst backend is not deployed in this environment yet."
+              : "AI analyst is temporarily unavailable.";
+        setInsight(msg);
+        setConfidenceLevel("low");
+        setCaveat("Showing fallback guidance while live insight is unavailable.");
+        setSuggestedQuestions(["How long will my balance last?", "What top-up amount is safest this week?"]);
+        setHistory([{ role: "assistant", content: msg }]);
       } finally {
         if (!cancelled) setLoading(false);
       }
