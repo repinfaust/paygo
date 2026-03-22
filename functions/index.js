@@ -486,6 +486,15 @@ async function loadScenarioById(scenarioId) {
 }
 
 async function resolveScenarioCustomer(scenario) {
+  const normalize = (value) =>
+    String(value || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim()
+      .toLowerCase();
+
+  const hasWord = (source, word) => normalize(source).includes(normalize(word));
+
   if (scenario.customerId) {
     const byIdRef = db.doc(`customers/${scenario.customerId}`);
     const byIdSnap = await byIdRef.get();
@@ -497,18 +506,71 @@ async function resolveScenarioCustomer(scenario) {
     }
   }
 
-  if (!scenario.region || !scenario.customerName) {
+  if (!scenario.region) {
     return null;
   }
 
   const regionSnap = await db.collection("customers").where("region", "==", scenario.region).get();
-  const match = regionSnap.docs.find((docSnap) => {
-    const name = String(docSnap.data().name || "").trim().toLowerCase();
-    return name === String(scenario.customerName || "").trim().toLowerCase();
-  });
+  if (regionSnap.empty) {
+    return null;
+  }
 
-  if (!match) return null;
-  return { ref: match.ref, data: match.data() };
+  if (scenario.customerName) {
+    const expectedName = normalize(scenario.customerName);
+    const exact = regionSnap.docs.find((docSnap) => normalize(docSnap.data().name) === expectedName);
+    if (exact) {
+      return { ref: exact.ref, data: exact.data() };
+    }
+  }
+
+  const scenarioId = normalize(scenario.id);
+  const ranked = regionSnap.docs
+    .map((docSnap) => {
+      const data = docSnap.data();
+      let score = 0;
+      const segment = normalize(data.segment);
+      const meterType = normalize(data.account?.meterType);
+      const debtBalance = Number(data.account?.debtBalance || 0);
+      const hasDebtRisk = hasWord(segment, "debt") || debtBalance > 0;
+      const vulnerable = hasWord(segment, "vulnerable") || Boolean(data.alerts?.lowBalance);
+      const nonSmart = meterType.includes("non-smart") || meterType.includes("nonsmart");
+
+      if (scenarioId.includes("vulnerable")) {
+        if (vulnerable) score += 10;
+      }
+      if (scenarioId.includes("payment-failure")) {
+        if (vulnerable || hasDebtRisk) score += 9;
+      }
+      if (scenarioId.includes("debt-recovery")) {
+        if (hasDebtRisk) score += 10;
+      }
+      if (scenarioId.includes("non-smart")) {
+        if (nonSmart) score += 10;
+      }
+      if (scenarioId.includes("smart-power") || scenarioId.includes("high-usage") || scenarioId.includes("new-install")) {
+        if (!vulnerable && !hasDebtRisk) score += 7;
+        if (!nonSmart) score += 4;
+      }
+      if (scenarioId.includes("ev-solar")) {
+        const overrides = data.featureOverrides || {};
+        if (overrides.evChargingScheduler || overrides.solarExportSummary) score += 10;
+      }
+
+      const balance = Number(data.account?.balance || 0);
+      if (scenarioId.includes("critical") || scenarioId.includes("vulnerable") || scenarioId.includes("payment-failure")) {
+        score += Math.max(0, 5 - Math.min(5, Math.floor(balance / 5)));
+      }
+
+      return { docSnap, data, score };
+    })
+    .sort((a, b) => b.score - a.score);
+
+  const best = ranked[0];
+  if (best) {
+    return { ref: best.docSnap.ref, data: best.data };
+  }
+
+  return null;
 }
 
 exports.applyScenario = onCall({ region: "europe-west2" }, async (request) => {
