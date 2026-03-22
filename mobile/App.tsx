@@ -1967,8 +1967,9 @@ function ConfigPanelScreen({
     </Pressable>
   );
   return (
-    <Pressable style={{ flex: 1, backgroundColor: "rgba(31,27,21,0.18)", justifyContent: "flex-end" }} onPress={onClose}>
-      <Pressable onPress={() => {}} style={{ backgroundColor: "#fff", borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingHorizontal: 20, paddingBottom: 20, paddingTop: 8, maxHeight: "92%", overflow: "hidden" }}>
+    <View style={{ flex: 1, backgroundColor: "rgba(31,27,21,0.18)", justifyContent: "flex-end" }}>
+      <Pressable style={{ ...StyleSheet.absoluteFillObject }} onPress={onClose} />
+      <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingHorizontal: 20, paddingBottom: 20, paddingTop: 8, maxHeight: "92%", overflow: "hidden" }}>
         <View style={{ alignItems: "center", marginBottom: 8 }}><View style={{ width: 50, height: 6, borderRadius: 999, backgroundColor: "#eae1d7" }} /></View>
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
           <View>
@@ -2071,8 +2072,8 @@ function ConfigPanelScreen({
           </Pressable>
         </View>
         </ScrollView>
-      </Pressable>
-    </Pressable>
+      </View>
+    </View>
   );
 }
 
