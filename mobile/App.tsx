@@ -113,21 +113,19 @@ export default function App() {
     return resolveConfig(selectedRegion, segmentConfig, selectedCustomer);
   }, [selectedRegion, selectedCustomer, segmentConfig]);
 
-  function onBack() {
-    if (route === "customer") {
-      setSelectedCustomer(null);
-      setSegmentConfig(null);
-      setPayments([]);
-      setRoute("region");
-      return;
-    }
-    if (route === "dashboard") {
-      setRoute("customer");
-      return;
-    }
-    if (route === "topup" || route === "payments" || route === "support" || route === "account") {
-      setRoute("dashboard");
-    }
+  function goToCustomer() {
+    setSelectedCustomer(null);
+    setSegmentConfig(null);
+    setPayments([]);
+    setRoute("customer");
+  }
+
+  function goToRegion() {
+    setSelectedCustomer(null);
+    setSegmentConfig(null);
+    setPayments([]);
+    setSelectedRegion(null);
+    setRoute("region");
   }
 
   async function onTopUp() {
@@ -193,7 +191,7 @@ export default function App() {
         </ScreenFrame>
       ) : route === "customer" ? (
         <ScreenFrame theme={theme}>
-          <GlassHeader theme={theme} title={selectedRegion?.brand ?? "PAYGO"} subtitle="Select Persona" onBack={onBack} />
+          <GlassHeader theme={theme} title={selectedRegion?.brand ?? "PAYGO"} subtitle="Select Persona" onHome={goToRegion} />
           <FlatList
             contentContainerStyle={styles.scrollContent}
             data={customers}
@@ -227,7 +225,13 @@ export default function App() {
         </ScreenFrame>
       ) : route === "topup" ? (
         <ScreenFrame theme={theme}>
-          <GlassHeader theme={theme} title="Manual Top-Up" subtitle={selectedCustomer?.name ?? ""} onBack={onBack} />
+          <GlassHeader
+            theme={theme}
+            title="Manual Top-Up"
+            subtitle={selectedCustomer?.name ?? ""}
+            onBack={goToCustomer}
+            onHome={goToRegion}
+          />
           <View style={styles.scrollContent}>
             <View style={[styles.surfaceLow, { backgroundColor: theme.colors.surfaceLow }]}> 
               <View style={[styles.surfaceHigh, { backgroundColor: theme.colors.surfaceHigh }]}> 
@@ -253,7 +257,13 @@ export default function App() {
         </ScreenFrame>
       ) : route === "payments" ? (
         <ScreenFrame theme={theme}>
-          <GlassHeader theme={theme} title="Payment History" subtitle={selectedCustomer?.name ?? ""} onBack={onBack} />
+          <GlassHeader
+            theme={theme}
+            title="Payment History"
+            subtitle={selectedCustomer?.name ?? ""}
+            onBack={goToCustomer}
+            onHome={goToRegion}
+          />
           <FlatList
             contentContainerStyle={styles.scrollContent}
             data={payments}
@@ -271,7 +281,7 @@ export default function App() {
         </ScreenFrame>
       ) : route === "support" ? (
         <ScreenFrame theme={theme}>
-          <GlassHeader theme={theme} title="Support" subtitle={selectedRegion?.id ?? ""} onBack={onBack} />
+          <GlassHeader theme={theme} title="Support" subtitle={selectedRegion?.id ?? ""} onBack={goToCustomer} onHome={goToRegion} />
           <View style={styles.scrollContent}>
             <View style={[styles.surfaceLow, { backgroundColor: theme.colors.surfaceLow }]}> 
               <View style={[styles.surfaceHigh, { backgroundColor: theme.colors.surfaceHigh }]}> 
@@ -284,7 +294,7 @@ export default function App() {
         </ScreenFrame>
       ) : route === "account" ? (
         <ScreenFrame theme={theme}>
-          <GlassHeader theme={theme} title="Account" subtitle={selectedCustomer?.name ?? ""} onBack={onBack} />
+          <GlassHeader theme={theme} title="Account" subtitle={selectedCustomer?.name ?? ""} onBack={goToCustomer} onHome={goToRegion} />
           <View style={styles.scrollContent}>
             <View style={[styles.surfaceLow, { backgroundColor: theme.colors.surfaceLow }]}> 
               <View style={[styles.surfaceHigh, { backgroundColor: theme.colors.surfaceHigh }]}> 
@@ -297,7 +307,13 @@ export default function App() {
         </ScreenFrame>
       ) : (
         <ScreenFrame theme={theme}>
-          <GlassHeader theme={theme} title={selectedRegion?.brand ?? "PAYGO"} subtitle={selectedCustomer?.name ?? ""} onBack={onBack} />
+          <GlassHeader
+            theme={theme}
+            title={selectedRegion?.brand ?? "PAYGO"}
+            subtitle={selectedCustomer?.name ?? ""}
+            onBack={goToCustomer}
+            onHome={goToRegion}
+          />
           <ScrollView contentContainerStyle={styles.scrollContent}>
             <View style={[styles.surfaceLow, { backgroundColor: theme.colors.surfaceLow }]}> 
               <View style={[styles.balanceHero, { backgroundColor: theme.colors.surfaceLowest, shadowColor: theme.colors.shadow }]}> 
@@ -349,18 +365,31 @@ function GlassHeader({
   title,
   subtitle,
   onBack,
+  onHome,
 }: {
   theme: DesignTheme;
   title: string;
   subtitle: string;
   onBack?: () => void;
+  onHome?: () => void;
 }) {
   return (
     <BlurView intensity={20} tint="light" style={[styles.glassHeader, { backgroundColor: theme.colors.glass }]}> 
-      {onBack && (
-        <Pressable onPress={onBack} style={styles.backPressable}>
-          <Text style={[styles.backLabel, { color: theme.colors.primary, fontFamily: theme.type.title }]}>Back</Text>
-        </Pressable>
+      {(onBack || onHome) && (
+        <View style={styles.headerNavRow}>
+          {onBack ? (
+            <Pressable onPress={onBack} style={styles.backPressable}>
+              <Text style={[styles.backLabel, { color: theme.colors.primary, fontFamily: theme.type.title }]}>Back</Text>
+            </Pressable>
+          ) : (
+            <View />
+          )}
+          {onHome && (
+            <Pressable onPress={onHome} style={styles.backPressable}>
+              <Text style={[styles.backLabel, { color: theme.colors.primary, fontFamily: theme.type.title }]}>Home</Text>
+            </Pressable>
+          )}
+        </View>
       )}
       <Text style={[styles.title, { color: theme.colors.onSurface, fontFamily: theme.type.title }]}>{title}</Text>
       <Text style={[styles.label, { color: theme.colors.onSurfaceMuted, fontFamily: theme.type.label }]}>{subtitle}</Text>
@@ -551,11 +580,15 @@ const styles = StyleSheet.create({
   },
   backPressable: {
     marginBottom: 8,
-    alignSelf: "flex-start",
   },
   backLabel: {
     fontSize: 14,
     fontWeight: "700",
+  },
+  headerNavRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   editorialInput: {
     fontSize: 32,
