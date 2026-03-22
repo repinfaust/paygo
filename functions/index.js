@@ -701,6 +701,62 @@ exports.resetScenarioState = onCall({ region: "europe-west2" }, async (request) 
   return { ok: true };
 });
 
+exports.backfillDebtBalances = onCall({ region: "europe-west2" }, async (request) => {
+  requireAuth(request);
+
+  const { defaultDebtBalance = 73 } = request.data || {};
+  const fallback = Number(defaultDebtBalance);
+  if (!Number.isFinite(fallback) || fallback <= 0) {
+    throw new HttpsError("invalid-argument", "defaultDebtBalance must be a positive number.");
+  }
+
+  const snap = await db.collection("customers").get();
+  const targets = snap.docs.filter((docSnap) => {
+    const data = docSnap.data();
+    const segment = String(data.segment || "").toLowerCase();
+    const name = String(data.name || "").toLowerCase();
+    const isDebtRisk =
+      segment.includes("debt") ||
+      segment.includes("vulnerable") ||
+      name.includes("ciar") ||
+      name.includes("david");
+    const debtBalance = Number(data.account?.debtBalance || 0);
+    return isDebtRisk && debtBalance <= 0;
+  });
+
+  if (targets.length === 0) {
+    return { ok: true, updated: 0, customerIds: [] };
+  }
+
+  const batch = db.batch();
+  const customerIds = [];
+  for (const docSnap of targets) {
+    const data = docSnap.data();
+    const account = data.account || {};
+    batch.set(
+      docSnap.ref,
+      {
+        account: {
+          ...account,
+          debtBalance: fallback,
+        },
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      { merge: true },
+    );
+    customerIds.push(docSnap.id);
+  }
+
+  await batch.commit();
+  logger.info("Debt balance backfill complete", {
+    updated: targets.length,
+    customerIds,
+    uid: request.auth.uid,
+  });
+
+  return { ok: true, updated: targets.length, customerIds };
+});
+
 function dayKeyUTC(now = new Date()) {
   return now.toISOString().slice(0, 10);
 }

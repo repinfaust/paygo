@@ -1340,6 +1340,8 @@ function SolasDashboard({
   const rawDebtBalance = Number(customer.account?.debtBalance ?? 0);
   const debtBalance = rawDebtBalance > 0 ? rawDebtBalance : debtSegment ? 73 : 0;
   const isDebtRisk = debtBalance > 0 || Boolean(customer.alerts?.lowBalance) || debtSegment;
+  const showDebtRepayment = debtBalance > 0;
+  const showMeterReadPrompt = isDebtRisk || Boolean(featureFlags.meterReadSubmission) || customer.account?.meterType === "non-smart";
   const scheduledTopUp = customer.topUpConfig?.autoTopUpEnabled !== false;
   const repaymentTarget = 120;
   const repaymentRemaining = Math.max(0, Math.min(repaymentTarget, debtBalance));
@@ -1397,7 +1399,7 @@ function SolasDashboard({
           </View>
         )}
 
-        {isDebtRisk && (
+        {showDebtRepayment && (
           <>
             <View style={{ marginTop: 12, borderRadius: 18, backgroundColor: "#fff8f7", borderWidth: 1, borderColor: "rgba(186,26,26,0.2)", padding: 14 }}>
               <Text style={{ color: "#93000a", fontFamily: "BeVietnamPro_600SemiBold", fontSize: 10, letterSpacing: 1.1, textTransform: "uppercase" }}>Debt Repayment Plan</Text>
@@ -1409,13 +1411,15 @@ function SolasDashboard({
                 <View style={{ width: `${repaymentPct}%` as `${number}%`, height: 8, borderRadius: 999, backgroundColor: "#00694c" }} />
               </View>
             </View>
-
-            <Pressable onPress={onSupport} style={{ marginTop: 12, borderRadius: 18, backgroundColor: "#ffffff", borderWidth: 1, borderColor: "rgba(188,202,193,0.35)", padding: 14 }}>
-              <Text style={{ color: "#93000a", fontFamily: "BeVietnamPro_600SemiBold", fontSize: 10, letterSpacing: 1.1, textTransform: "uppercase" }}>Action Required</Text>
-              <Text style={{ marginTop: 6, color: "#1c1c1a", fontFamily: "PlusJakartaSans_600SemiBold", fontSize: 22 }}>Meter read due</Text>
-              <Text style={{ marginTop: 4, color: "#3d4943", fontFamily: "BeVietnamPro_400Regular", fontSize: 12 }}>Submit your latest reading to keep estimates accurate.</Text>
-            </Pressable>
           </>
+        )}
+
+        {showMeterReadPrompt && (
+          <Pressable onPress={onSupport} style={{ marginTop: 12, borderRadius: 18, backgroundColor: "#ffffff", borderWidth: 1, borderColor: "rgba(188,202,193,0.35)", padding: 14 }}>
+            <Text style={{ color: "#93000a", fontFamily: "BeVietnamPro_600SemiBold", fontSize: 10, letterSpacing: 1.1, textTransform: "uppercase" }}>Action Required</Text>
+            <Text style={{ marginTop: 6, color: "#1c1c1a", fontFamily: "PlusJakartaSans_600SemiBold", fontSize: 22 }}>Meter read due</Text>
+            <Text style={{ marginTop: 4, color: "#3d4943", fontFamily: "BeVietnamPro_400Regular", fontSize: 12 }}>Submit your latest reading to keep estimates accurate.</Text>
+          </Pressable>
         )}
 
         <AiAnalystCard
