@@ -196,8 +196,10 @@ export default function App() {
       setConfigAutoTopUp(Boolean(resolved?.featureFlags.autoTopUp));
       setConfigLowBalanceSms(Boolean(resolved?.featureFlags.lowBalanceAlert));
       setConfigAiScope("segment");
+      const appliedScenarioId = String((selectedCustomer as any)?.scenarioMeta?.id || "");
+      setSelectedQuickScenarioId(QUICK_SCENARIOS.some((item) => item.id === appliedScenarioId) ? appliedScenarioId : null);
     }
-  }, [route, resolved?.featureFlags.aiAnalystCard, resolved?.featureFlags.autoTopUp, resolved?.featureFlags.lowBalanceAlert]);
+  }, [route, resolved?.featureFlags.aiAnalystCard, resolved?.featureFlags.autoTopUp, resolved?.featureFlags.lowBalanceAlert, selectedCustomer]);
 
   function goCustomer() {
     setSelectedCustomer(null);
@@ -281,7 +283,6 @@ export default function App() {
         return;
       }
       await onApplyScenario(scenario);
-      setSelectedQuickScenarioId(null);
       return;
     }
     const target = configBalance < 25 ? 8 : configBalance < 50 ? 25 : configBalance < 75 ? 80 : 160;

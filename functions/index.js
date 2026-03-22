@@ -534,15 +534,21 @@ async function resolveScenarioCustomer(scenario) {
       const hasDebtRisk = hasWord(segment, "debt") || debtBalance > 0;
       const vulnerable = hasWord(segment, "vulnerable") || Boolean(data.alerts?.lowBalance);
       const nonSmart = meterType.includes("non-smart") || meterType.includes("nonsmart");
+      const balance = Number(data.account?.balance || 0);
+      const daysRemaining = Number(data.account?.daysRemaining || 0);
 
       if (scenarioId.includes("vulnerable")) {
         if (vulnerable) score += 10;
+        if (balance <= 10) score += 5;
+        if (daysRemaining > 0 && daysRemaining <= 3) score += 4;
       }
       if (scenarioId.includes("payment-failure")) {
         if (vulnerable || hasDebtRisk) score += 9;
+        if (balance <= 5) score += 5;
       }
       if (scenarioId.includes("debt-recovery")) {
         if (hasDebtRisk) score += 10;
+        if (debtBalance > 0) score += 5;
       }
       if (scenarioId.includes("non-smart")) {
         if (nonSmart) score += 10;
@@ -556,8 +562,13 @@ async function resolveScenarioCustomer(scenario) {
         if (overrides.evChargingScheduler || overrides.solarExportSummary) score += 10;
       }
 
-      const balance = Number(data.account?.balance || 0);
-      if (scenarioId.includes("critical") || scenarioId.includes("vulnerable") || scenarioId.includes("payment-failure")) {
+      if (scenarioId.includes("new-install")) {
+        if (balance <= 1) score += 6;
+      } else if (scenarioId.includes("smart-power")) {
+        if (balance >= 25) score += 4;
+      } else if (scenarioId.includes("ev-solar")) {
+        if (balance >= 40) score += 4;
+      } else if (scenarioId.includes("critical") || scenarioId.includes("vulnerable") || scenarioId.includes("payment-failure")) {
         score += Math.max(0, 5 - Math.min(5, Math.floor(balance / 5)));
       }
 
