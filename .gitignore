@@ -1,0 +1,6 @@
+# Secret keys and local credentials
+**/GoogleService-Info*.plist
+**/.env.local
+**/.env*.local
+**/service-account*.json
+**/firebase-admin*.json
