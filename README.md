@@ -34,6 +34,7 @@ This SoRR pack assumes:
 - Firestore-backed seed/demo data
 - modular feature-gated screens
 - neutral PAYGO shell with branded interior by region
+- UK Ember as primary market baseline for first visual fidelity pass
 
 ## Initial scope
 Phase 1–3 is the practical initial target:

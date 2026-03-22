@@ -71,3 +71,21 @@ Reason:
 - keeps the POC credible
 - prevents hidden technical debt from becoming foundation
 - matches normal project standards for this codebase
+
+## D-010 — UK is the primary market baseline
+Status: Accepted
+
+For design and implementation sequencing, UK (Ember) is the primary market baseline.
+Reason:
+- explicit current user instruction
+- UK Ember screens are the first fidelity target before IE (Solas) and US (Pulse) parity passes
+- avoids drift from intended stakeholder demo narrative
+
+## D-011 — Figma is the visual source of truth for UI fidelity
+Status: Accepted
+
+When there is any discrepancy between implementation and screenshots/mock HTML, the Figma frame/component spec is authoritative for visual fidelity.
+Reason:
+- reduces ambiguity in spacing, type scale, and component structure
+- enables precise, repeatable implementation and review
+- prevents "close enough" interpretation during design-critical work

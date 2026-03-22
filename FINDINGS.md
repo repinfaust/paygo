@@ -11,3 +11,13 @@ If the dashboard does not visibly differentiate customer types and regions, the 
 
 ## F-004 — Config panel is valuable but not the first proof point
 The first impression comes from believable region/persona switching, not from internal tooling. The config panel increases demo power later.
+
+## F-005 — Current implementation has visual fidelity drift vs target designs
+Recent implementation passes improved structure but still diverged from intended UK Ember visual spec (layout density, typography scale, and component proportions).
+
+Implication:
+- visual trust is reduced for stakeholder demo quality
+- work must proceed frame-by-frame from canonical design source rather than interpretation
+
+## F-006 — UK-first fidelity pass is required before cross-market parity
+To prevent compounding inconsistencies, Ember (UK) should be matched first to approved design, then the same rigor applied to Solas and Pulse.
