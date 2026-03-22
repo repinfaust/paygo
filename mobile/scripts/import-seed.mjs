@@ -249,6 +249,20 @@ const customers = profiles.map((profile) => {
     _seed: {
       source: "payg_seed_data_v4.xlsx",
       importedAt: new Date().toISOString(),
+      originalAccount: {
+        balance,
+        balanceCurrency: region === "IE" ? "EUR" : region === "US" ? "USD" : "GBP",
+        daysRemaining: Math.max(3, Math.round(balance / Math.max(1, toNumber(profile.Est_Monthly_Spend, 100) / 30))),
+        daysRemainingBasis: "estimated",
+        emergencyCredit: {
+          enabled: segment === "vulnerable_support",
+          used: false,
+          remaining: segment === "vulnerable_support" ? 20 : 0,
+        },
+        debtBalance: toNumber(profile.Outstanding_Debt, 0),
+        tariff: segment.includes("smart") || segment.includes("eco") ? "smart-flex" : "standard",
+        meterType: String(profile.Meter_Type ?? "unknown"),
+      },
       raw: profile,
     },
   };
