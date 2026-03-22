@@ -1336,10 +1336,13 @@ function SolasDashboard({
   const displayName = customer.name?.split(" ")[0] ?? "Cillian";
   const balance = customer.account?.balance ?? 22;
   const daysRemaining = customer.account?.daysRemaining ?? Math.max(1, Math.floor(balance / 1.2));
-  const isDebtRisk = Boolean(customer.account?.debtBalance && customer.account.debtBalance > 0) || Boolean(customer.alerts?.lowBalance) || customer.segment.toLowerCase().includes("debt");
+  const debtSegment = customer.segment.toLowerCase().includes("debt");
+  const rawDebtBalance = Number(customer.account?.debtBalance ?? 0);
+  const debtBalance = rawDebtBalance > 0 ? rawDebtBalance : debtSegment ? 73 : 0;
+  const isDebtRisk = debtBalance > 0 || Boolean(customer.alerts?.lowBalance) || debtSegment;
   const scheduledTopUp = customer.topUpConfig?.autoTopUpEnabled !== false;
   const repaymentTarget = 120;
-  const repaymentRemaining = Math.max(0, Math.min(repaymentTarget, Number(customer.account?.debtBalance ?? 0)));
+  const repaymentRemaining = Math.max(0, Math.min(repaymentTarget, debtBalance));
   const repaymentPaid = repaymentTarget - repaymentRemaining;
   const repaymentPct = Math.max(0, Math.min(100, Math.round((repaymentPaid / repaymentTarget) * 100)));
   return (
