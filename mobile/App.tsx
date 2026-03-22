@@ -757,16 +757,23 @@ function RegionScreen({ regions, onSelect, onOpenConfig }: { regions: RegionConf
         })}
         <View style={styles.shellCapabilityWrap}>
           <View style={styles.shellCapabilityBlock}>
-            <Text style={styles.shellCapabilityTitle}>UNIFIED LEDGER</Text>
-            <Text style={styles.shellCapabilityBody}>Multi-currency accounting built on top of our proprietary core banking engine. All regions report to a single dashboard.</Text>
+            <Text style={styles.shellCapabilityTitle}>PAYGO — DEMO APP</Text>
+            <Text style={styles.shellCapabilityBody}>
+              This app is a product demonstration tool built to explore prepayment energy management concepts across UK, Irish, and US markets.
+            </Text>
           </View>
           <View style={styles.shellCapabilityBlock}>
-            <Text style={styles.shellCapabilityTitle}>LOCAL COMPLIANCE</Text>
-            <Text style={styles.shellCapabilityBody}>Automatic tax withholding and regulatory reporting specific to each selected jurisdiction's financial authority.</Text>
+            <Text style={styles.shellCapabilityBody}>
+              All customer profiles, account data, and energy usage shown are entirely fictional. No real customer information, payment details, or live energy accounts are used at any point.
+            </Text>
           </View>
           <View style={styles.shellCapabilityBlock}>
-            <Text style={styles.shellCapabilityTitle}>INSTANT SETTLEMENT</Text>
-            <Text style={styles.shellCapabilityBody}>Experience zero-latency transfers between PAYGO users regardless of their selected regional market.</Text>
+            <Text style={styles.shellCapabilityBody}>
+              This is not a consumer product. No personal data is collected or stored.
+            </Text>
+            <Text style={[styles.shellCapabilityBody, { marginTop: 10, fontSize: 15 }]}>
+              Built by David Loake · david.loake@ensek.co.uk
+            </Text>
           </View>
         </View>
       </ScrollView>
