@@ -91,6 +91,9 @@ export default function App() {
   const [configAiScope, setConfigAiScope] = useState<ConfigScope>("segment");
   const [configReturnRoute, setConfigReturnRoute] = useState<Route>("region");
   const [selectedQuickScenarioId, setSelectedQuickScenarioId] = useState<string | null>(null);
+  const [aiQuotaCount, setAiQuotaCount] = useState<number | null>(null);
+  const [aiQuotaLimit, setAiQuotaLimit] = useState<number>(100);
+  const [aiQuotaLoading, setAiQuotaLoading] = useState(false);
   const [pendingScenarioCustomerId, setPendingScenarioCustomerId] = useState<string | null>(null);
   const [suppressRegionAutoRoute, setSuppressRegionAutoRoute] = useState(false);
 
@@ -197,7 +200,34 @@ export default function App() {
     setConfigLowBalanceSms(Boolean(resolved?.featureFlags.lowBalanceAlert));
     setConfigAiScope("segment");
     setSelectedQuickScenarioId(null);
+    void refreshAiQuotaStatus();
   }, [route]);
+
+  async function refreshAiQuotaStatus() {
+    try {
+      setAiQuotaLoading(true);
+      const getQuota = httpsCallable(functions, "getAiQuotaStatus");
+      const res: any = await getQuota({});
+      const data = res?.data || {};
+      setAiQuotaCount(Number(data.count ?? 0));
+      setAiQuotaLimit(Number(data.limit ?? 100));
+    } catch {
+      setAiQuotaCount(null);
+      setAiQuotaLimit(100);
+    } finally {
+      setAiQuotaLoading(false);
+    }
+  }
+
+  async function onResetAiQuotaToday() {
+    try {
+      const resetQuota = httpsCallable(functions, "resetAiQuotaToday");
+      await resetQuota({});
+      await refreshAiQuotaStatus();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "AI quota reset failed");
+    }
+  }
 
   function goCustomer() {
     setSelectedCustomer(null);
@@ -616,6 +646,17 @@ export default function App() {
               <Text style={{ marginTop: 4, color: "#a18b78", fontFamily: "Inter_500Medium", fontSize: 10 }}>
                 Build: {CONFIG_BUILD_MARKER}
               </Text>
+              <Text style={{ marginTop: 4, color: "#6f5a49", fontFamily: "Inter_500Medium", fontSize: 11 }}>
+                AI quota today: {aiQuotaLoading ? "loading..." : aiQuotaCount ?? "n/a"} / {aiQuotaLimit}
+              </Text>
+              {__DEV__ ? (
+                <Pressable
+                  onPress={onResetAiQuotaToday}
+                  style={{ marginTop: 6, alignSelf: "flex-start", borderWidth: 1, borderColor: "#d7c3b1", borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6 }}
+                >
+                  <Text style={{ color: "#855000", fontFamily: "Inter_700Bold", fontSize: 10, letterSpacing: 0.8 }}>Reset AI quota (dev)</Text>
+                </Pressable>
+              ) : null}
               <View style={{ marginTop: 10, flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
                 {QUICK_SCENARIOS.map((item) => (
                   <Pressable

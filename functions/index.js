@@ -815,6 +815,29 @@ async function reserveAiCallQuota(uid, mode) {
   });
 }
 
+exports.getAiQuotaStatus = onCall({ region: "europe-west2" }, async (request) => {
+  requireAuth(request);
+  const dayKey = dayKeyUTC();
+  const snap = await db.doc(`aiQuota/${dayKey}`).get();
+  const count = Number(snap.data()?.count || 0);
+  return {
+    ok: true,
+    dayKey,
+    count,
+    limit: AI_DAILY_LIMIT,
+    remaining: Math.max(0, AI_DAILY_LIMIT - count),
+  };
+});
+
+exports.resetAiQuotaToday = onCall({ region: "europe-west2" }, async (request) => {
+  requireAuth(request);
+  const dayKey = dayKeyUTC();
+  const ref = db.doc(`aiQuota/${dayKey}`);
+  await ref.delete();
+  logger.info("AI quota reset", { dayKey, uid: request.auth.uid });
+  return { ok: true, dayKey, count: 0, limit: AI_DAILY_LIMIT, remaining: AI_DAILY_LIMIT };
+});
+
 function seasonFromDateISO(dateISO) {
   const date = dateISO ? new Date(dateISO) : new Date();
   const month = date.getUTCMonth() + 1;

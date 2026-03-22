@@ -42,3 +42,15 @@ Config panel quick scenarios were previously visual-only and did not apply full 
 Implication:
 - scenario chips now trigger server-side scenario application with region/customer switching
 - reset path now clears scenario layer and restores seeded customer state
+
+## F-010 — Config regression risk requires a fixed smoke checklist
+Recent regressions came from precedence drift between scenario overrides, scope-based feature flags, and config draft state in the panel.
+
+Implication:
+- every config-related change must run this smoke checklist before merge:
+  - open config, toggle `AI Energy Analyst`, `Auto Top-up`, `Low Balance SMS`, verify they do not auto-reset
+  - press `Apply Changes`, reopen config, verify persisted values
+  - select a quick scenario, apply, verify region/customer switch and scenario effects
+  - make a manual toggle change after scenario apply, verify scenario selection clears and manual changes persist
+  - verify AI card render path for ON and OFF states
+  - verify quota message path by forcing a limit breach
