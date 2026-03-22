@@ -1968,16 +1968,18 @@ function ConfigPanelScreen({
   );
   return (
     <View style={{ flex: 1, backgroundColor: "rgba(31,27,21,0.18)", justifyContent: "flex-end" }}>
-      <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingHorizontal: 20, paddingBottom: 20, paddingTop: 8 }}>
+      <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingHorizontal: 20, paddingBottom: 20, paddingTop: 8, maxHeight: "92%", overflow: "hidden" }}>
         <View style={{ alignItems: "center", marginBottom: 8 }}><View style={{ width: 50, height: 6, borderRadius: 999, backgroundColor: "#eae1d7" }} /></View>
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
           <View>
             <Text style={{ color: t.primary, fontFamily: "Inter_700Bold", fontSize: 36 }}>Demo Config Panel</Text>
             <Text style={{ color: t.muted, fontFamily: "Inter_700Bold", fontSize: 10, letterSpacing: 2 }}>SCREEN ID: S-04</Text>
           </View>
-          <Pressable onPress={onClose}><Text style={{ color: t.muted, fontSize: 34 }}>×</Text></Pressable>
+          <Pressable onPress={onClose} style={{ borderRadius: 999, backgroundColor: "#f6ece2", paddingHorizontal: 12, paddingVertical: 8 }}>
+            <Text style={{ color: t.text, fontFamily: "Inter_700Bold", fontSize: 12, letterSpacing: 0.8 }}>BACK</Text>
+          </Pressable>
         </View>
-        <View style={{ marginTop: 20 }}>
+        <ScrollView style={{ marginTop: 20 }} contentContainerStyle={{ paddingBottom: 8 }} showsVerticalScrollIndicator={false}>
           <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 10 }}>
             <Text style={{ color: t.text, fontFamily: "Inter_700Bold", fontSize: 20 }}>Balance State</Text>
             <View style={{ backgroundColor: "#ffdad6", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 }}>
@@ -1991,7 +1993,6 @@ function ConfigPanelScreen({
           <View style={{ marginTop: 8, flexDirection: "row", justifyContent: "space-between" }}>
             <Text style={styles.configScaleLabel}>CRITICAL</Text><Text style={styles.configScaleLabel}>LOW</Text><Text style={styles.configScaleLabel}>STABLE</Text><Text style={styles.configScaleLabel}>HIGH</Text>
           </View>
-        </View>
         <View style={{ marginTop: 16, flexDirection: "row", gap: 16 }}>
           <View style={{ flex: 1 }}>
             <Text style={styles.configGroupTitle}>PAYMENT MODELS</Text>
@@ -2069,6 +2070,7 @@ function ConfigPanelScreen({
             <Text style={{ color: t.text, fontFamily: "Inter_700Bold", fontSize: 12, letterSpacing: 1.2 }}>RESET</Text>
           </Pressable>
         </View>
+        </ScrollView>
       </View>
     </View>
   );
