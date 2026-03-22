@@ -31,4 +31,4 @@ try {
 
 export const firebaseAuth = auth;
 export const db = getFirestore(firebaseApp);
-export const functions = getFunctions(firebaseApp);
+export const functions = getFunctions(firebaseApp, "europe-west2");
