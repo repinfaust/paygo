@@ -191,15 +191,14 @@ export default function App() {
   }, [selectedRegion, selectedCustomer, segmentConfig]);
 
   useEffect(() => {
-    if (route === "config") {
-      setConfigAiAnalystCard(Boolean(resolved?.featureFlags.aiAnalystCard));
-      setConfigAutoTopUp(Boolean(resolved?.featureFlags.autoTopUp));
-      setConfigLowBalanceSms(Boolean(resolved?.featureFlags.lowBalanceAlert));
-      setConfigAiScope("segment");
-      const appliedScenarioId = String((selectedCustomer as any)?.scenarioMeta?.id || "");
-      setSelectedQuickScenarioId(QUICK_SCENARIOS.some((item) => item.id === appliedScenarioId) ? appliedScenarioId : null);
-    }
-  }, [route, resolved?.featureFlags.aiAnalystCard, resolved?.featureFlags.autoTopUp, resolved?.featureFlags.lowBalanceAlert, selectedCustomer]);
+    if (route !== "config") return;
+    setConfigAiAnalystCard(Boolean(resolved?.featureFlags.aiAnalystCard));
+    setConfigAutoTopUp(Boolean(resolved?.featureFlags.autoTopUp));
+    setConfigLowBalanceSms(Boolean(resolved?.featureFlags.lowBalanceAlert));
+    setConfigAiScope("segment");
+    const appliedScenarioId = String((selectedCustomer as any)?.scenarioMeta?.id || "");
+    setSelectedQuickScenarioId(QUICK_SCENARIOS.some((item) => item.id === appliedScenarioId) ? appliedScenarioId : null);
+  }, [route]);
 
   function goCustomer() {
     setSelectedCustomer(null);
@@ -306,34 +305,16 @@ export default function App() {
     }
   }
 
-  async function onToggleAiAnalystCard(nextValue: boolean) {
+  function onToggleAiAnalystCard(nextValue: boolean) {
     setConfigAiAnalystCard(nextValue);
-    if (!selectedCustomer || !selectedRegion) return;
-    try {
-      await setFeatureAtScope("aiAnalystCard", nextValue);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "AI Analyst toggle failed");
-    }
   }
 
-  async function onToggleAutoTopUp(nextValue: boolean) {
+  function onToggleAutoTopUp(nextValue: boolean) {
     setConfigAutoTopUp(nextValue);
-    if (!selectedCustomer || !selectedRegion) return;
-    try {
-      await setFeatureAtScope("autoTopUp", nextValue);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Auto Top-up toggle failed");
-    }
   }
 
-  async function onToggleLowBalanceSms(nextValue: boolean) {
+  function onToggleLowBalanceSms(nextValue: boolean) {
     setConfigLowBalanceSms(nextValue);
-    if (!selectedCustomer || !selectedRegion) return;
-    try {
-      await setFeatureAtScope("lowBalanceAlert", nextValue);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Low Balance SMS toggle failed");
-    }
   }
 
   async function onApplyScenario(scenario: QuickScenario) {
