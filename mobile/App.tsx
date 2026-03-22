@@ -196,8 +196,7 @@ export default function App() {
     setConfigAutoTopUp(Boolean(resolved?.featureFlags.autoTopUp));
     setConfigLowBalanceSms(Boolean(resolved?.featureFlags.lowBalanceAlert));
     setConfigAiScope("segment");
-    const appliedScenarioId = String((selectedCustomer as any)?.scenarioMeta?.id || "");
-    setSelectedQuickScenarioId(QUICK_SCENARIOS.some((item) => item.id === appliedScenarioId) ? appliedScenarioId : null);
+    setSelectedQuickScenarioId(null);
   }, [route]);
 
   function goCustomer() {
@@ -284,6 +283,10 @@ export default function App() {
       await onApplyScenario(scenario);
       return;
     }
+    if ((selectedCustomer as any)?.scenarioMeta?.id) {
+      const resetScenarioState = httpsCallable(functions, "resetScenarioState");
+      await resetScenarioState({ customerId: selectedCustomer.id });
+    }
     const target = configBalance < 25 ? 8 : configBalance < 50 ? 25 : configBalance < 75 ? 80 : 160;
     const current = selectedCustomer.account.balance ?? 0;
     const delta = Number((target - current).toFixed(2));
@@ -306,14 +309,17 @@ export default function App() {
   }
 
   function onToggleAiAnalystCard(nextValue: boolean) {
+    setSelectedQuickScenarioId(null);
     setConfigAiAnalystCard(nextValue);
   }
 
   function onToggleAutoTopUp(nextValue: boolean) {
+    setSelectedQuickScenarioId(null);
     setConfigAutoTopUp(nextValue);
   }
 
   function onToggleLowBalanceSms(nextValue: boolean) {
+    setSelectedQuickScenarioId(null);
     setConfigLowBalanceSms(nextValue);
   }
 
@@ -583,12 +589,18 @@ export default function App() {
         {route === "config" && (
           <ConfigPanelScreen
             balance={configBalance}
-            onBalance={setConfigBalance}
+            onBalance={(v) => {
+              setSelectedQuickScenarioId(null);
+              setConfigBalance(v);
+            }}
             aiAnalystCard={configAiAnalystCard}
             autoTopUp={configAutoTopUp}
             lowBalanceSms={configLowBalanceSms}
             aiScope={configAiScope}
-            onScopeChange={setConfigAiScope}
+            onScopeChange={(scope) => {
+              setSelectedQuickScenarioId(null);
+              setConfigAiScope(scope);
+            }}
             scopeRegionId={selectedRegion?.id ?? null}
             scopeSegmentId={selectedCustomer?.segment ?? null}
             onToggleAiAnalystCard={onToggleAiAnalystCard}
