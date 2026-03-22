@@ -89,6 +89,7 @@ export default function App() {
   const [configLowBalanceSms, setConfigLowBalanceSms] = useState(false);
   const [configAiScope, setConfigAiScope] = useState<ConfigScope>("segment");
   const [configReturnRoute, setConfigReturnRoute] = useState<Route>("region");
+  const [selectedQuickScenarioId, setSelectedQuickScenarioId] = useState<string | null>(null);
   const [pendingScenarioCustomerId, setPendingScenarioCustomerId] = useState<string | null>(null);
   const [suppressRegionAutoRoute, setSuppressRegionAutoRoute] = useState(false);
 
@@ -272,6 +273,16 @@ export default function App() {
       setError("Select a region and customer before applying config changes.");
       return;
     }
+    if (selectedQuickScenarioId) {
+      const scenario = QUICK_SCENARIOS.find((item) => item.id === selectedQuickScenarioId);
+      if (!scenario) {
+        setError("Selected scenario is invalid.");
+        return;
+      }
+      await onApplyScenario(scenario);
+      setSelectedQuickScenarioId(null);
+      return;
+    }
     const target = configBalance < 25 ? 8 : configBalance < 50 ? 25 : configBalance < 75 ? 80 : 160;
     const current = selectedCustomer.account.balance ?? 0;
     const delta = Number((target - current).toFixed(2));
@@ -370,6 +381,7 @@ export default function App() {
   }
 
   async function onResetScenario() {
+    setSelectedQuickScenarioId(null);
     if (!selectedCustomer) return;
     try {
       const resetScenarioState = httpsCallable(functions, "resetScenarioState");
@@ -610,8 +622,15 @@ export default function App() {
                 {QUICK_SCENARIOS.map((item) => (
                   <Pressable
                     key={item.id}
-                    onPress={() => onApplyScenario(item)}
-                    style={{ borderWidth: 1, borderColor: "#d7c3b1", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: item.region === selectedRegion?.id ? "#fff" : "#fdf7f1" }}
+                    onPress={() => setSelectedQuickScenarioId(item.id)}
+                    style={{
+                      borderWidth: 1,
+                      borderColor: selectedQuickScenarioId === item.id ? "#a76500" : "#d7c3b1",
+                      borderRadius: 999,
+                      paddingHorizontal: 12,
+                      paddingVertical: 8,
+                      backgroundColor: selectedQuickScenarioId === item.id ? "#fff4e8" : item.region === selectedRegion?.id ? "#fff" : "#fdf7f1",
+                    }}
                   >
                     <Text style={{ color: TOKENS.ember.text, fontFamily: "Inter_500Medium", fontSize: 12 }}>
                       {item.label}
@@ -624,6 +643,11 @@ export default function App() {
                   </Pressable>
                 ))}
               </View>
+              {selectedQuickScenarioId ? (
+                <Text style={{ marginTop: 8, color: "#6f5a49", fontFamily: "Inter_700Bold", fontSize: 11 }}>
+                  Scenario selected. Tap Apply Changes to run it.
+                </Text>
+              ) : null}
               <Text style={{ marginTop: 8, color: "#857464", fontFamily: "Inter_500Medium", fontSize: 11 }}>
                 Selecting a scenario may switch region/customer automatically.
               </Text>
