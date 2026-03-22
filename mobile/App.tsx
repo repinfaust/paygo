@@ -113,6 +113,23 @@ export default function App() {
     return resolveConfig(selectedRegion, segmentConfig, selectedCustomer);
   }, [selectedRegion, selectedCustomer, segmentConfig]);
 
+  function onBack() {
+    if (route === "customer") {
+      setSelectedCustomer(null);
+      setSegmentConfig(null);
+      setPayments([]);
+      setRoute("region");
+      return;
+    }
+    if (route === "dashboard") {
+      setRoute("customer");
+      return;
+    }
+    if (route === "topup" || route === "payments" || route === "support" || route === "account") {
+      setRoute("dashboard");
+    }
+  }
+
   async function onTopUp() {
     if (!selectedCustomer) return;
 
@@ -154,7 +171,6 @@ export default function App() {
         <ScreenFrame theme={theme}>
           <GlassHeader theme={theme} title="PAYGO" subtitle="Select Market" />
           <ScrollView contentContainerStyle={styles.scrollContent}>
-            <Text style={[styles.display, { color: theme.colors.onSurface, fontFamily: theme.type.display }]}>Responsive energy, local voice.</Text>
             <Text style={[styles.offsetBody, { color: theme.colors.onSurfaceMuted, fontFamily: theme.type.body }]}>Pick a market to retheme the shell and activate persona-aware capabilities.</Text>
             {regions.map((item) => {
               const itemTheme = regionTheme(item.id);
@@ -177,7 +193,7 @@ export default function App() {
         </ScreenFrame>
       ) : route === "customer" ? (
         <ScreenFrame theme={theme}>
-          <GlassHeader theme={theme} title={selectedRegion?.brand ?? "PAYGO"} subtitle="Select Persona" />
+          <GlassHeader theme={theme} title={selectedRegion?.brand ?? "PAYGO"} subtitle="Select Persona" onBack={onBack} />
           <FlatList
             contentContainerStyle={styles.scrollContent}
             data={customers}
@@ -186,9 +202,20 @@ export default function App() {
               <Pressable onPress={() => setSelectedCustomer(item)} style={styles.cardPressable}>
                 <View style={[styles.surfaceLow, { backgroundColor: theme.colors.surfaceLow }]}> 
                   <View style={[styles.surfaceHigh, { backgroundColor: theme.colors.surfaceHigh }]}> 
-                    <View style={styles.rowBetween}>
-                      <Text style={[styles.title, { color: theme.colors.onSurface, fontFamily: theme.type.title }]}>{item.name}</Text>
-                      <Chip theme={theme} label={item.segment.replace("_", " ")} />
+                    <View style={styles.customerHeaderRow}>
+                      <Text
+                        numberOfLines={2}
+                        style={[
+                          styles.title,
+                          styles.customerName,
+                          { color: theme.colors.onSurface, fontFamily: theme.type.title },
+                        ]}
+                      >
+                        {item.name}
+                      </Text>
+                      <View style={styles.customerChipWrap}>
+                        <Chip theme={theme} label={item.segment.replace("_", " ")} />
+                      </View>
                     </View>
                     <Text style={[styles.body, { color: theme.colors.onSurfaceMuted, fontFamily: theme.type.body }]}>{item.account?.meterType ?? "Unknown meter"}</Text>
                     <Text style={[styles.label, { color: theme.colors.onSurfaceMuted, fontFamily: theme.type.label }]}>ID {item.id}</Text>
@@ -200,7 +227,7 @@ export default function App() {
         </ScreenFrame>
       ) : route === "topup" ? (
         <ScreenFrame theme={theme}>
-          <GlassHeader theme={theme} title="Manual Top-Up" subtitle={selectedCustomer?.name ?? ""} />
+          <GlassHeader theme={theme} title="Manual Top-Up" subtitle={selectedCustomer?.name ?? ""} onBack={onBack} />
           <View style={styles.scrollContent}>
             <View style={[styles.surfaceLow, { backgroundColor: theme.colors.surfaceLow }]}> 
               <View style={[styles.surfaceHigh, { backgroundColor: theme.colors.surfaceHigh }]}> 
@@ -226,7 +253,7 @@ export default function App() {
         </ScreenFrame>
       ) : route === "payments" ? (
         <ScreenFrame theme={theme}>
-          <GlassHeader theme={theme} title="Payment History" subtitle={selectedCustomer?.name ?? ""} />
+          <GlassHeader theme={theme} title="Payment History" subtitle={selectedCustomer?.name ?? ""} onBack={onBack} />
           <FlatList
             contentContainerStyle={styles.scrollContent}
             data={payments}
@@ -244,7 +271,7 @@ export default function App() {
         </ScreenFrame>
       ) : route === "support" ? (
         <ScreenFrame theme={theme}>
-          <GlassHeader theme={theme} title="Support" subtitle={selectedRegion?.id ?? ""} />
+          <GlassHeader theme={theme} title="Support" subtitle={selectedRegion?.id ?? ""} onBack={onBack} />
           <View style={styles.scrollContent}>
             <View style={[styles.surfaceLow, { backgroundColor: theme.colors.surfaceLow }]}> 
               <View style={[styles.surfaceHigh, { backgroundColor: theme.colors.surfaceHigh }]}> 
@@ -257,7 +284,7 @@ export default function App() {
         </ScreenFrame>
       ) : route === "account" ? (
         <ScreenFrame theme={theme}>
-          <GlassHeader theme={theme} title="Account" subtitle={selectedCustomer?.name ?? ""} />
+          <GlassHeader theme={theme} title="Account" subtitle={selectedCustomer?.name ?? ""} onBack={onBack} />
           <View style={styles.scrollContent}>
             <View style={[styles.surfaceLow, { backgroundColor: theme.colors.surfaceLow }]}> 
               <View style={[styles.surfaceHigh, { backgroundColor: theme.colors.surfaceHigh }]}> 
@@ -270,7 +297,7 @@ export default function App() {
         </ScreenFrame>
       ) : (
         <ScreenFrame theme={theme}>
-          <GlassHeader theme={theme} title={selectedRegion?.brand ?? "PAYGO"} subtitle={selectedCustomer?.name ?? ""} />
+          <GlassHeader theme={theme} title={selectedRegion?.brand ?? "PAYGO"} subtitle={selectedCustomer?.name ?? ""} onBack={onBack} />
           <ScrollView contentContainerStyle={styles.scrollContent}>
             <View style={[styles.surfaceLow, { backgroundColor: theme.colors.surfaceLow }]}> 
               <View style={[styles.balanceHero, { backgroundColor: theme.colors.surfaceLowest, shadowColor: theme.colors.shadow }]}> 
@@ -317,9 +344,24 @@ function ScreenFrame({ theme, children }: { theme: DesignTheme; children: React.
   return <SafeAreaView style={[styles.screen, { backgroundColor: theme.colors.surface }]}>{children}</SafeAreaView>;
 }
 
-function GlassHeader({ theme, title, subtitle }: { theme: DesignTheme; title: string; subtitle: string }) {
+function GlassHeader({
+  theme,
+  title,
+  subtitle,
+  onBack,
+}: {
+  theme: DesignTheme;
+  title: string;
+  subtitle: string;
+  onBack?: () => void;
+}) {
   return (
     <BlurView intensity={20} tint="light" style={[styles.glassHeader, { backgroundColor: theme.colors.glass }]}> 
+      {onBack && (
+        <Pressable onPress={onBack} style={styles.backPressable}>
+          <Text style={[styles.backLabel, { color: theme.colors.primary, fontFamily: theme.type.title }]}>Back</Text>
+        </Pressable>
+      )}
       <Text style={[styles.title, { color: theme.colors.onSurface, fontFamily: theme.type.title }]}>{title}</Text>
       <Text style={[styles.label, { color: theme.colors.onSurfaceMuted, fontFamily: theme.type.label }]}>{subtitle}</Text>
     </BlurView>
@@ -405,6 +447,20 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+  },
+  customerHeaderRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+  },
+  customerName: {
+    flexShrink: 1,
+    flexGrow: 1,
+    minWidth: 0,
+  },
+  customerChipWrap: {
+    maxWidth: "55%",
+    alignSelf: "flex-start",
   },
   cardPressable: {
     marginBottom: 10,
@@ -492,6 +548,14 @@ const styles = StyleSheet.create({
   },
   linkLabel: {
     fontSize: 15,
+  },
+  backPressable: {
+    marginBottom: 8,
+    alignSelf: "flex-start",
+  },
+  backLabel: {
+    fontSize: 14,
+    fontWeight: "700",
   },
   editorialInput: {
     fontSize: 32,
