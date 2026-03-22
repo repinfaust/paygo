@@ -37,6 +37,7 @@ export interface CustomerProfile {
   region: RegionCode;
   segment: string;
   featureOverrides?: FeatureFlags;
+  scenarioOverrides?: FeatureFlags;
   account: CustomerAccount;
   paymentMethods?: Array<{ id: string; type: string; label?: string }>;
   topUpConfig?: {

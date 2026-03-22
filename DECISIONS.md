@@ -89,3 +89,32 @@ Reason:
 - reduces ambiguity in spacing, type scale, and component structure
 - enables precise, repeatable implementation and review
 - prevents "close enough" interpretation during design-critical work
+
+## D-012 — AI Analyst must run server-side with daily quota guard
+Status: Accepted
+
+OpenAI calls for the AI Analyst feature are executed via Firebase Functions only, with API key stored as a Functions secret and a Firestore-backed daily cap of 50 calls.
+Reason:
+- keeps API keys out of the mobile client bundle
+- preserves Functions-only mutation/integration pattern
+- enforces explicit cost/rate safety for demos
+- allows consistent guardrails and prompt policy across markets
+
+## D-013 — AI Analyst flag writes at config scope, not customer scope
+Status: Accepted
+
+`aiAnalystCard` toggles are persisted to `config/segments` or `config/regions` (selected scope) and resolved through standard config merging. They are not written to `customers/{id}.featureOverrides`.
+Reason:
+- aligns with modular runtime configuration model
+- avoids hardcoding per-customer behaviour for a cross-market feature
+- keeps feature rollouts demonstrable at segment/region level
+
+## D-014 — Demo scenarios apply as customer `scenarioOverrides` via Functions
+Status: Accepted
+
+Quick scenarios are now applied through callable Functions and persisted as `customers/{id}.scenarioOverrides` plus scenario metadata, with reset handled server-side. Runtime config resolution merges `scenarioOverrides` above normal profile overrides.
+
+Reason:
+- preserves Functions-only mutation discipline
+- provides deterministic full-state demo presets without local hardcoding
+- keeps scenario layer explicitly separate from baseline customer/profile config

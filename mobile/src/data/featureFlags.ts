@@ -31,6 +31,7 @@ export const ALL_FEATURE_FLAGS = [
   "tariffDisplay",
   "referralScheme",
   "multiPropertyView",
+  "aiAnalystCard",
 ] as const;
 
 export function baseFlags(): Record<string, boolean> {

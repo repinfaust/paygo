@@ -21,3 +21,24 @@ Implication:
 
 ## F-006 — UK-first fidelity pass is required before cross-market parity
 To prevent compounding inconsistencies, Ember (UK) should be matched first to approved design, then the same rigor applied to Solas and Pulse.
+
+## F-007 — AI insight quality depends on data confidence framing
+AI insights are useful across markets, but Ireland/non-smart profiles must explicitly frame observations as estimates or trust drops quickly.
+
+Implication:
+- confidence/degradation logic is required in both prompt context and UI caveat rendering
+- failure mode should be silent card omission rather than intrusive error UI
+
+## F-008 — Customer-level AI flag writes reduce demo modularity
+Persisting `aiAnalystCard` in customer overrides works technically but undermines segment/region-level narrative control.
+
+Implication:
+- config panel now targets segment/region scope directly
+- resolved config remains authoritative and consistent across selected personas
+
+## F-009 — Static quick-scenario chips reduced demo trust
+Config panel quick scenarios were previously visual-only and did not apply full state changes.
+
+Implication:
+- scenario chips now trigger server-side scenario application with region/customer switching
+- reset path now clears scenario layer and restores seeded customer state

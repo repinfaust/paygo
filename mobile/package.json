@@ -12,7 +12,9 @@
     "seed:import": "node ./scripts/import-seed.mjs"
   },
   "dependencies": {
+    "@expo-google-fonts/be-vietnam-pro": "^0.4.1",
     "@expo-google-fonts/inter": "^0.4.2",
+    "@expo-google-fonts/manrope": "^0.4.2",
     "@expo-google-fonts/newsreader": "^0.4.1",
     "@expo-google-fonts/plus-jakarta-sans": "^0.4.2",
     "@expo-google-fonts/space-grotesk": "^0.4.1",
@@ -27,8 +29,8 @@
     "firebase": "^12.11.0",
     "react": "19.2.0",
     "react-native": "0.83.2",
-    "react-native-safe-area-context": "^5.7.0",
-    "react-native-screens": "^4.24.0"
+    "react-native-safe-area-context": "~5.6.2",
+    "react-native-screens": "~4.23.0"
   },
   "devDependencies": {
     "@types/react": "~19.2.2",

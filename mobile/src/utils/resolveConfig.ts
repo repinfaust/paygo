@@ -17,6 +17,7 @@ export function resolveConfig(
     ...(region.capabilityOverrides ?? {}),
     ...(segment?.featureFlags ?? {}),
     ...(customer.featureOverrides ?? {}),
+    ...(customer.scenarioOverrides ?? {}),
   };
 
   if (!region.smartMeterAvailability) {
