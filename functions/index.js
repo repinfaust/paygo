@@ -6,7 +6,7 @@ const admin = require("firebase-admin");
 admin.initializeApp();
 const db = admin.firestore();
 const OPENAI_API_KEY = defineSecret("OPENAI_API_KEY");
-const AI_DAILY_LIMIT = 50;
+const AI_DAILY_LIMIT = 100;
 const ALL_FEATURE_FLAGS = [
   "balanceDisplay",
   "daysRemainingEstimate",

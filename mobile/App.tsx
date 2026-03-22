@@ -1742,9 +1742,11 @@ function AiAnalystCard({
         setHistory([{ role: "assistant", content: String(data.insight) }]);
       } catch (e: any) {
         const raw = String(e?.message || "");
+        const code = String(e?.code || "");
+        const isQuota = code.includes("resource-exhausted") || raw.toLowerCase().includes("daily ai limit reached");
         const msg =
-          raw.includes("resource-exhausted")
-            ? "Daily AI quota reached (50 calls). Try again tomorrow."
+          isQuota
+            ? "Daily AI limit reached (100 calls). Try again tomorrow."
             : raw.includes("not-found")
               ? "AI analyst backend is not deployed in this environment yet."
               : "AI analyst is temporarily unavailable.";
