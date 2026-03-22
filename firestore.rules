@@ -1,0 +1,11 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Demo posture per SoRR: authenticated sessions can read app data,
+    // all client writes are blocked (mutations must flow through Functions).
+    match /{document=**} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+  }
+}
