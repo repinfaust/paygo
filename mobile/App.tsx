@@ -1,29 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  ActivityIndicator,
-  FlatList,
-  Pressable,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
-import {
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  onSnapshot,
-  orderBy,
-  query,
-  where,
-  limit,
-} from "firebase/firestore";
+import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import { BlurView } from "expo-blur";
+import { LinearGradient } from "expo-linear-gradient";
+import { collection, doc, getDoc, getDocs, limit, onSnapshot, orderBy, query, where } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { onAuthStateChanged, signInAnonymously } from "firebase/auth";
 
 import { db, firebaseAuth, functions } from "./src/config/firebase";
+import { regionTheme, type DesignTheme } from "./src/theme";
 import type { CustomerProfile, PaymentItem, RegionConfig, SegmentConfig } from "./src/types/paygo";
 import { resolveConfig } from "./src/utils/resolveConfig";
 
@@ -40,6 +25,8 @@ export default function App() {
   const [payments, setPayments] = useState<PaymentItem[]>([]);
   const [topUpAmount, setTopUpAmount] = useState("20");
   const [error, setError] = useState<string | null>(null);
+
+  const theme = useMemo(() => regionTheme(selectedRegion?.id), [selectedRegion?.id]);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(firebaseAuth, async (user) => {
@@ -63,18 +50,14 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!selectedRegion) {
-      return;
-    }
+    if (!selectedRegion) return;
     const regionId = selectedRegion.id;
 
     let mounted = true;
     async function loadCustomers() {
       const q = query(collection(db, "customers"), where("region", "==", regionId));
       const snap = await getDocs(q);
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
       setCustomers(snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<CustomerProfile, "id">) })));
       setRoute("customer");
     }
@@ -86,9 +69,7 @@ export default function App() {
   }, [selectedRegion]);
 
   useEffect(() => {
-    if (!selectedCustomer || !selectedRegion) {
-      return;
-    }
+    if (!selectedCustomer || !selectedRegion) return;
 
     getDoc(doc(db, "config", "segments"))
       .then((segmentDoc) => {
@@ -120,6 +101,7 @@ export default function App() {
     });
 
     setRoute("dashboard");
+
     return () => {
       unsubCustomer();
       unsubPayments();
@@ -127,16 +109,13 @@ export default function App() {
   }, [selectedCustomer?.id, selectedRegion?.id]);
 
   const resolved = useMemo(() => {
-    if (!selectedRegion || !selectedCustomer) {
-      return null;
-    }
+    if (!selectedRegion || !selectedCustomer) return null;
     return resolveConfig(selectedRegion, segmentConfig, selectedCustomer);
   }, [selectedRegion, selectedCustomer, segmentConfig]);
 
   async function onTopUp() {
-    if (!selectedCustomer) {
-      return;
-    }
+    if (!selectedCustomer) return;
+
     const amount = Number(topUpAmount);
     if (!Number.isFinite(amount) || amount <= 0) {
       setError("Top-up amount must be positive");
@@ -153,238 +132,387 @@ export default function App() {
     }
   }
 
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.center}>
-        <ActivityIndicator />
-        <Text style={styles.title}>Loading PAYGO...</Text>
-      </SafeAreaView>
-    );
-  }
-
-  if (error) {
-    return (
-      <SafeAreaView style={styles.center}>
-        <Text style={styles.error}>{error}</Text>
-        <Pressable onPress={() => setError(null)} style={styles.button}>
-          <Text style={styles.buttonText}>Dismiss</Text>
-        </Pressable>
-      </SafeAreaView>
-    );
-  }
-
-  if (route === "region") {
-    return (
-      <SafeAreaView style={styles.container}>
-        <Text style={styles.title}>Select Region</Text>
-        <FlatList
-          data={regions}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <Pressable style={styles.card} onPress={() => setSelectedRegion(item)}>
-              <Text style={styles.cardTitle}>{item.id}</Text>
-              <Text>{item.brand}</Text>
-              <Text>{item.currency}</Text>
-            </Pressable>
-          )}
-        />
-      </SafeAreaView>
-    );
-  }
-
-  if (route === "customer") {
-    return (
-      <SafeAreaView style={styles.container}>
-        <Text style={styles.title}>Select Customer ({selectedRegion?.id})</Text>
-        <FlatList
-          data={customers}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <Pressable style={styles.card} onPress={() => setSelectedCustomer(item)}>
-              <Text style={styles.cardTitle}>{item.name}</Text>
-              <Text>{item.segment}</Text>
-              <Text>{item.account?.meterType ?? "Unknown meter"}</Text>
-            </Pressable>
-          )}
-        />
-      </SafeAreaView>
-    );
-  }
-
-  if (route === "topup") {
-    return (
-      <SafeAreaView style={styles.container}>
-        <Text style={styles.title}>Manual Top-Up</Text>
-        <TextInput value={topUpAmount} onChangeText={setTopUpAmount} style={styles.input} keyboardType="numeric" />
-        <Pressable style={styles.button} onPress={onTopUp}>
-          <Text style={styles.buttonText}>Submit via Function</Text>
-        </Pressable>
-        <Pressable onPress={() => setRoute("dashboard")}>
-          <Text style={styles.link}>Back</Text>
-        </Pressable>
-      </SafeAreaView>
-    );
-  }
-
-  if (route === "payments") {
-    return (
-      <SafeAreaView style={styles.container}>
-        <Text style={styles.title}>Payment History</Text>
-        <FlatList
-          data={payments}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <View style={styles.row}>
-              <Text>{item.date}</Text>
-              <Text>{item.amount}</Text>
-            </View>
-          )}
-        />
-        <Pressable onPress={() => setRoute("dashboard")}>
-          <Text style={styles.link}>Back</Text>
-        </Pressable>
-      </SafeAreaView>
-    );
-  }
-
-  if (route === "support") {
-    return (
-      <SafeAreaView style={styles.container}>
-        <Text style={styles.title}>Support</Text>
-        <Text>Demo support content for selected market.</Text>
-        <Pressable onPress={() => setRoute("dashboard")}>
-          <Text style={styles.link}>Back</Text>
-        </Pressable>
-      </SafeAreaView>
-    );
-  }
-
-  if (route === "account") {
-    return (
-      <SafeAreaView style={styles.container}>
-        <Text style={styles.title}>Account</Text>
-        <Text>Customer: {selectedCustomer?.name}</Text>
-        <Text>Region: {selectedRegion?.id}</Text>
-        <Pressable onPress={() => setRoute("dashboard")}>
-          <Text style={styles.link}>Back</Text>
-        </Pressable>
-      </SafeAreaView>
-    );
-  }
-
   return (
-    <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>Dashboard</Text>
-      <Text style={styles.balanceLabel}>Balance</Text>
-      <Text style={styles.balanceValue}>
-        {selectedCustomer?.account.balanceCurrency ?? selectedRegion?.currency} {selectedCustomer?.account.balance?.toFixed(2)}
-      </Text>
+    <SafeAreaProvider>
+      {loading ? (
+        <ScreenFrame theme={theme}>
+          <View style={styles.center}>
+            <ActivityIndicator color={theme.colors.primary} />
+            <Text style={[styles.headline, { color: theme.colors.onSurface, fontFamily: theme.type.headline }]}>Preparing PAYGO</Text>
+          </View>
+        </ScreenFrame>
+      ) : error ? (
+        <ScreenFrame theme={theme}>
+          <View style={styles.center}>
+            <View style={[styles.errorBlock, { backgroundColor: theme.colors.errorContainer }]}> 
+              <Text style={[styles.body, { color: theme.colors.error, fontFamily: theme.type.body }]}>{error}</Text>
+            </View>
+            <GradientButton label="Dismiss" theme={theme} onPress={() => setError(null)} />
+          </View>
+        </ScreenFrame>
+      ) : route === "region" ? (
+        <ScreenFrame theme={theme}>
+          <GlassHeader theme={theme} title="PAYGO" subtitle="Select Market" />
+          <ScrollView contentContainerStyle={styles.scrollContent}>
+            <Text style={[styles.display, { color: theme.colors.onSurface, fontFamily: theme.type.display }]}>Responsive energy, local voice.</Text>
+            <Text style={[styles.offsetBody, { color: theme.colors.onSurfaceMuted, fontFamily: theme.type.body }]}>Pick a market to retheme the shell and activate persona-aware capabilities.</Text>
+            {regions.map((item) => {
+              const itemTheme = regionTheme(item.id);
+              return (
+                <Pressable key={item.id} onPress={() => setSelectedRegion(item)} style={styles.cardPressable}>
+                  <View style={[styles.surfaceLow, { backgroundColor: itemTheme.colors.surfaceLow }]}> 
+                    <View style={[styles.surfaceHigh, { backgroundColor: itemTheme.colors.surfaceHigh }]}> 
+                      <View style={styles.rowBetween}>
+                        <Chip theme={itemTheme} label={`${item.id} Market`} />
+                        <Text style={[styles.label, { color: itemTheme.colors.onSurfaceMuted, fontFamily: theme.type.label }]}>{item.currency}</Text>
+                      </View>
+                      <Text style={[styles.title, { color: itemTheme.colors.onSurface, fontFamily: itemTheme.type.title }]}>{item.brand}</Text>
+                      <Text style={[styles.body, { color: itemTheme.colors.onSurfaceMuted, fontFamily: itemTheme.type.body }]}>{itemTheme.marketLabel}</Text>
+                    </View>
+                  </View>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        </ScreenFrame>
+      ) : route === "customer" ? (
+        <ScreenFrame theme={theme}>
+          <GlassHeader theme={theme} title={selectedRegion?.brand ?? "PAYGO"} subtitle="Select Persona" />
+          <FlatList
+            contentContainerStyle={styles.scrollContent}
+            data={customers}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <Pressable onPress={() => setSelectedCustomer(item)} style={styles.cardPressable}>
+                <View style={[styles.surfaceLow, { backgroundColor: theme.colors.surfaceLow }]}> 
+                  <View style={[styles.surfaceHigh, { backgroundColor: theme.colors.surfaceHigh }]}> 
+                    <View style={styles.rowBetween}>
+                      <Text style={[styles.title, { color: theme.colors.onSurface, fontFamily: theme.type.title }]}>{item.name}</Text>
+                      <Chip theme={theme} label={item.segment.replace("_", " ")} />
+                    </View>
+                    <Text style={[styles.body, { color: theme.colors.onSurfaceMuted, fontFamily: theme.type.body }]}>{item.account?.meterType ?? "Unknown meter"}</Text>
+                    <Text style={[styles.label, { color: theme.colors.onSurfaceMuted, fontFamily: theme.type.label }]}>ID {item.id}</Text>
+                  </View>
+                </View>
+              </Pressable>
+            )}
+          />
+        </ScreenFrame>
+      ) : route === "topup" ? (
+        <ScreenFrame theme={theme}>
+          <GlassHeader theme={theme} title="Manual Top-Up" subtitle={selectedCustomer?.name ?? ""} />
+          <View style={styles.scrollContent}>
+            <View style={[styles.surfaceLow, { backgroundColor: theme.colors.surfaceLow }]}> 
+              <View style={[styles.surfaceHigh, { backgroundColor: theme.colors.surfaceHigh }]}> 
+                <Text style={[styles.label, { color: theme.colors.onSurfaceMuted, fontFamily: theme.type.label }]}>Amount</Text>
+                <TextInput
+                  value={topUpAmount}
+                  onChangeText={setTopUpAmount}
+                  keyboardType="numeric"
+                  style={[
+                    styles.editorialInput,
+                    {
+                      color: theme.colors.onSurface,
+                      borderBottomColor: theme.colors.primary,
+                      fontFamily: theme.type.title,
+                    },
+                  ]}
+                />
+              </View>
+            </View>
+            <GradientButton theme={theme} label="Submit via Function" onPress={onTopUp} />
+            <TextLink theme={theme} label="Back to Dashboard" onPress={() => setRoute("dashboard")} />
+          </View>
+        </ScreenFrame>
+      ) : route === "payments" ? (
+        <ScreenFrame theme={theme}>
+          <GlassHeader theme={theme} title="Payment History" subtitle={selectedCustomer?.name ?? ""} />
+          <FlatList
+            contentContainerStyle={styles.scrollContent}
+            data={payments}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <View style={[styles.surfaceLow, { backgroundColor: theme.colors.surfaceLow, marginBottom: 10 }]}> 
+                <View style={[styles.rowBetween, styles.paymentRow, { backgroundColor: theme.colors.surfaceLowest }]}> 
+                  <Text style={[styles.body, { color: theme.colors.onSurface, fontFamily: theme.type.body }]}>{item.date}</Text>
+                  <Text style={[styles.bodyStrong, { color: theme.colors.onSurface, fontFamily: theme.type.title }]}>{item.amount}</Text>
+                </View>
+              </View>
+            )}
+            ListFooterComponent={<TextLink theme={theme} label="Back to Dashboard" onPress={() => setRoute("dashboard")} />}
+          />
+        </ScreenFrame>
+      ) : route === "support" ? (
+        <ScreenFrame theme={theme}>
+          <GlassHeader theme={theme} title="Support" subtitle={selectedRegion?.id ?? ""} />
+          <View style={styles.scrollContent}>
+            <View style={[styles.surfaceLow, { backgroundColor: theme.colors.surfaceLow }]}> 
+              <View style={[styles.surfaceHigh, { backgroundColor: theme.colors.surfaceHigh }]}> 
+                <Text style={[styles.headline, { color: theme.colors.onSurface, fontFamily: theme.type.headline }]}>Help and guidance</Text>
+                <Text style={[styles.body, { color: theme.colors.onSurfaceMuted, fontFamily: theme.type.body }]}>Support details can be themed per market while PAYGO shell remains consistent.</Text>
+              </View>
+            </View>
+            <TextLink theme={theme} label="Back to Dashboard" onPress={() => setRoute("dashboard")} />
+          </View>
+        </ScreenFrame>
+      ) : route === "account" ? (
+        <ScreenFrame theme={theme}>
+          <GlassHeader theme={theme} title="Account" subtitle={selectedCustomer?.name ?? ""} />
+          <View style={styles.scrollContent}>
+            <View style={[styles.surfaceLow, { backgroundColor: theme.colors.surfaceLow }]}> 
+              <View style={[styles.surfaceHigh, { backgroundColor: theme.colors.surfaceHigh }]}> 
+                <Text style={[styles.body, { color: theme.colors.onSurface, fontFamily: theme.type.body }]}>Region: {selectedRegion?.id}</Text>
+                <Text style={[styles.body, { color: theme.colors.onSurfaceMuted, fontFamily: theme.type.body }]}>Customer ID: {selectedCustomer?.id}</Text>
+              </View>
+            </View>
+            <TextLink theme={theme} label="Back to Dashboard" onPress={() => setRoute("dashboard")} />
+          </View>
+        </ScreenFrame>
+      ) : (
+        <ScreenFrame theme={theme}>
+          <GlassHeader theme={theme} title={selectedRegion?.brand ?? "PAYGO"} subtitle={selectedCustomer?.name ?? ""} />
+          <ScrollView contentContainerStyle={styles.scrollContent}>
+            <View style={[styles.surfaceLow, { backgroundColor: theme.colors.surfaceLow }]}> 
+              <View style={[styles.balanceHero, { backgroundColor: theme.colors.surfaceLowest, shadowColor: theme.colors.shadow }]}> 
+                <View style={styles.rowBetween}>
+                  <Chip theme={theme} label={theme.marketLabel} />
+                  <Text style={[styles.label, { color: theme.colors.onSurfaceMuted, fontFamily: theme.type.label }]}>PAYGO Balance</Text>
+                </View>
+                <Text style={[styles.display, { color: theme.colors.onSurface, fontFamily: theme.type.display }]}> 
+                  {selectedCustomer?.account.balanceCurrency ?? selectedRegion?.currency} {selectedCustomer?.account.balance?.toFixed(2)}
+                </Text>
+                {resolved?.featureFlags.daysRemainingEstimate && (
+                  <Text style={[styles.offsetBody, { color: theme.colors.onSurfaceMuted, fontFamily: theme.type.body }]}> 
+                    Days remaining: {selectedCustomer?.account.daysRemaining ?? "n/a"}
+                  </Text>
+                )}
+              </View>
+            </View>
 
-      {resolved?.featureFlags.daysRemainingEstimate && (
-        <Text>Days remaining: {selectedCustomer?.account.daysRemaining ?? "n/a"}</Text>
-      )}
-      {resolved?.featureFlags.lowBalanceAlert && (selectedCustomer?.account.balance ?? 0) < 20 && (
-        <Text style={styles.warning}>Low balance warning active</Text>
-      )}
+            <View style={[styles.surfaceLow, { backgroundColor: theme.colors.surfaceLow }]}> 
+              <View style={[styles.surfaceHigh, { backgroundColor: theme.colors.surfaceHigh }]}> 
+                <Text style={[styles.headline, { color: theme.colors.onSurface, fontFamily: theme.type.headline }]}>Actions</Text>
+                <View style={styles.actionGrid}>
+                  <GradientButton theme={theme} label="Manual Top-Up" onPress={() => setRoute("topup")} compact />
+                  <GradientButton theme={theme} label="Payment History" onPress={() => setRoute("payments")} compact />
+                  <GradientButton theme={theme} label="Support" onPress={() => setRoute("support")} compact />
+                  <GradientButton theme={theme} label="Account" onPress={() => setRoute("account")} compact />
+                </View>
+              </View>
+            </View>
 
-      <View style={styles.actions}>
-        <Pressable style={styles.button} onPress={() => setRoute("topup")}>
-          <Text style={styles.buttonText}>Manual Top-Up</Text>
-        </Pressable>
-        <Pressable style={styles.button} onPress={() => setRoute("payments")}>
-          <Text style={styles.buttonText}>Payment History</Text>
-        </Pressable>
-        <Pressable style={styles.button} onPress={() => setRoute("support")}>
-          <Text style={styles.buttonText}>Support</Text>
-        </Pressable>
-        <Pressable style={styles.button} onPress={() => setRoute("account")}>
-          <Text style={styles.buttonText}>Account</Text>
-        </Pressable>
-      </View>
-    </SafeAreaView>
+            {resolved?.featureFlags.lowBalanceAlert && (selectedCustomer?.account.balance ?? 0) < 20 && (
+              <View style={[styles.warningBlock, { backgroundColor: theme.colors.errorContainer }]}> 
+                <Text style={[styles.bodyStrong, { color: theme.colors.error, fontFamily: theme.type.title }]}>Low balance warning active</Text>
+              </View>
+            )}
+          </ScrollView>
+        </ScreenFrame>
+      )}
+    </SafeAreaProvider>
+  );
+}
+
+function ScreenFrame({ theme, children }: { theme: DesignTheme; children: React.ReactNode }) {
+  return <SafeAreaView style={[styles.screen, { backgroundColor: theme.colors.surface }]}>{children}</SafeAreaView>;
+}
+
+function GlassHeader({ theme, title, subtitle }: { theme: DesignTheme; title: string; subtitle: string }) {
+  return (
+    <BlurView intensity={20} tint="light" style={[styles.glassHeader, { backgroundColor: theme.colors.glass }]}> 
+      <Text style={[styles.title, { color: theme.colors.onSurface, fontFamily: theme.type.title }]}>{title}</Text>
+      <Text style={[styles.label, { color: theme.colors.onSurfaceMuted, fontFamily: theme.type.label }]}>{subtitle}</Text>
+    </BlurView>
+  );
+}
+
+function Chip({ theme, label }: { theme: DesignTheme; label: string }) {
+  return (
+    <View style={[styles.chip, { backgroundColor: theme.colors.secondaryContainer }]}> 
+      <Text style={[styles.chipLabel, { color: theme.colors.onSecondaryContainer, fontFamily: theme.type.label }]}>{label.toUpperCase()}</Text>
+    </View>
+  );
+}
+
+function TextLink({ theme, label, onPress }: { theme: DesignTheme; label: string; onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress} style={styles.linkPressable}>
+      <Text style={[styles.linkLabel, { color: theme.colors.primary, fontFamily: theme.type.title }]}>{label}</Text>
+    </Pressable>
+  );
+}
+
+function GradientButton({
+  theme,
+  label,
+  onPress,
+  compact,
+}: {
+  theme: DesignTheme;
+  label: string;
+  onPress: () => void;
+  compact?: boolean;
+}) {
+  return (
+    <Pressable onPress={onPress} style={[compact ? styles.compactButtonWrap : styles.buttonWrap]}> 
+      <LinearGradient
+        colors={[theme.colors.primary, theme.colors.primaryContainer]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[compact ? styles.compactButtonGradient : styles.buttonGradient]}
+      >
+        <Text style={[styles.buttonLabel, { fontFamily: theme.type.title }]}>{label}</Text>
+      </LinearGradient>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  screen: {
     flex: 1,
-    padding: 20,
-    backgroundColor: "#f6f8fb",
-    gap: 10,
+  },
+  glassHeader: {
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 16,
+    overflow: "hidden",
+  },
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 36,
+    gap: 14,
   },
   center: {
     flex: 1,
-    alignItems: "center",
     justifyContent: "center",
+    alignItems: "center",
+    gap: 16,
+    paddingHorizontal: 24,
+  },
+  surfaceLow: {
+    borderRadius: 16,
+    padding: 10,
+  },
+  surfaceHigh: {
+    borderRadius: 14,
+    padding: 14,
+    gap: 8,
+  },
+  rowBetween: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  cardPressable: {
+    marginBottom: 10,
+  },
+  balanceHero: {
+    borderRadius: 18,
+    padding: 16,
     gap: 10,
+    shadowOpacity: 0.24,
+    shadowRadius: 32,
+    shadowOffset: { width: 0, height: 12 },
+  },
+  actionGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  chip: {
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  chipLabel: {
+    fontSize: 11,
+    letterSpacing: 0.8,
+    fontWeight: "700",
+  },
+  display: {
+    fontSize: 44,
+    lineHeight: 50,
+  },
+  headline: {
+    fontSize: 28,
+    lineHeight: 34,
   },
   title: {
-    fontSize: 24,
+    fontSize: 22,
+    lineHeight: 28,
     fontWeight: "700",
   },
-  card: {
-    backgroundColor: "white",
-    padding: 16,
-    borderRadius: 10,
-    marginBottom: 10,
-    borderColor: "#d0d7e2",
-    borderWidth: 1,
+  body: {
+    fontSize: 15,
+    lineHeight: 22,
   },
-  cardTitle: {
+  bodyStrong: {
     fontSize: 16,
+    lineHeight: 22,
     fontWeight: "700",
   },
-  balanceLabel: {
-    fontSize: 12,
-    color: "#465063",
+  offsetBody: {
+    fontSize: 15,
+    lineHeight: 22,
+    marginLeft: 20,
   },
-  balanceValue: {
-    fontSize: 34,
-    fontWeight: "800",
+  label: {
+    fontSize: 11,
+    letterSpacing: 0.7,
+    textTransform: "uppercase",
   },
-  warning: {
-    color: "#b10017",
-    fontWeight: "600",
+  buttonWrap: {
+    marginTop: 4,
   },
-  actions: {
-    gap: 10,
+  compactButtonWrap: {
+    width: "48%",
   },
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    backgroundColor: "white",
-    borderWidth: 1,
-    borderColor: "#d0d7e2",
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 8,
-  },
-  button: {
-    backgroundColor: "#0a4fb3",
-    borderRadius: 8,
+  buttonGradient: {
+    borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 16,
+    alignItems: "center",
   },
-  buttonText: {
-    color: "white",
+  compactButtonGradient: {
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    alignItems: "center",
+  },
+  buttonLabel: {
+    color: "#ffffff",
     fontWeight: "700",
-    textAlign: "center",
+    fontSize: 15,
   },
-  link: {
-    color: "#0a4fb3",
-    fontWeight: "700",
-    marginTop: 12,
+  linkPressable: {
+    marginTop: 6,
   },
-  input: {
-    backgroundColor: "white",
-    borderWidth: 1,
-    borderColor: "#d0d7e2",
-    borderRadius: 8,
-    padding: 12,
+  linkLabel: {
+    fontSize: 15,
   },
-  error: {
-    color: "#b10017",
-    maxWidth: 300,
-    textAlign: "center",
+  editorialInput: {
+    fontSize: 32,
+    lineHeight: 38,
+    paddingVertical: 8,
+    borderBottomWidth: 2,
+  },
+  paymentRow: {
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  warningBlock: {
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  errorBlock: {
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    maxWidth: 340,
   },
 });
