@@ -703,7 +703,7 @@ function RegionScreen({ regions, onSelect, onOpenConfig }: { regions: RegionConf
   };
 
   const ordered = [...regions].sort((a, b) => {
-    const rank: Record<string, number> = { UK: 0, US: 1, IE: 2, OTHER: 99 };
+    const rank: Record<string, number> = { UK: 0, IE: 1, US: 2, OTHER: 99 };
     return rank[normalizeRegion(a)] - rank[normalizeRegion(b)];
   });
   return (
